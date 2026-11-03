@@ -8,11 +8,11 @@ export default function Sidebar({ role, userName }: { role: string; userName: st
 
   // Role ke hisaab se alag alag menus
   const menus = {
-    Admin: [
+   Admin: [
       { name: "Dashboard Overview", path: "/" },
-      { name: "Manage Tickets", path: "/tickets" },
+      { name: "Manage Tickets", path: "/manage-tickets" }, 
       { name: "Users & Agents", path: "/users" },
-      { name: "SLA Reports", path: "/reports" },
+      { name: "SLA Reports", path: "/sla-reports" },       
       { name: "Settings", path: "/settings" },
     ],
     Agent: [
