@@ -50,7 +50,7 @@ export default async function DashboardPage() {
 
       {/* Main Content Container - Mobile par 'pt-20' lagaya hai taake header ke neechay chup na jaye */}
       <main className="flex-1 flex flex-col h-screen overflow-y-auto pt-20 md:pt-0">
-        
+
         <header className="bg-white border-b border-slate-200 px-6 md:px-8 py-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
             <h2 className="text-xl md:text-2xl font-bold text-slate-800">
@@ -60,17 +60,20 @@ export default async function DashboardPage() {
               Welcome back, <span className="font-semibold text-slate-700">{session.user.name}</span>. Here's what's happening today.
             </p>
           </div>
-          
-          <Link 
-            href="/new-ticket" 
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Submit New Ticket
-          </Link>
+
+          {/* 👇 Yeh check lagane se button sirf User ko dikhega, Admin aur Agent se hat jayega */}
+          {role === "User" && (
+            <Link
+              href="/new-ticket"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-2.5 rounded-xl text-sm transition-all shadow-lg shadow-blue-500/20 flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Submit New Ticket
+            </Link>
+          )}
         </header>
 
         <div className="p-6 md:p-8 space-y-8 flex-1">
-          
+
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
             <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative overflow-hidden">
@@ -101,8 +104,8 @@ export default async function DashboardPage() {
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-lg text-slate-800">Recent Tickets (Latest 5)</h3>
               {role !== "User" && (
-                <Link 
-                  href={role === "Admin" ? "/manage-tickets" : "/assigned"} 
+                <Link
+                  href={role === "Admin" ? "/manage-tickets" : "/assigned"}
                   className="text-sm text-blue-600 hover:underline font-semibold"
                 >
                   View All →
