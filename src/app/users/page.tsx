@@ -68,15 +68,19 @@ export default function UsersPage() {
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar role={session?.user?.role} userName={session?.user?.name} />
       
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="bg-white border-b border-slate-200 px-8 py-5">
-          <h2 className="text-2xl font-bold text-slate-800">Users & Agents</h2>
+      {/* 👇 Yahan pt-20 md:pt-0 ka izafa kiya gaya hai */}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden pt-20 md:pt-0">
+        
+        {/* Header ko bhi responsive padding di gayi hai */}
+        <header className="bg-white border-b border-slate-200 px-6 md:px-8 py-5">
+          <h2 className="text-xl md:text-2xl font-bold text-slate-800">Users & Agents</h2>
           <p className="text-slate-500 text-sm mt-1">Manage system users and assign roles.</p>
         </header>
         
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-            <table className="w-full text-left border-collapse">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          {/* Table container mein overflow-x-auto lagaya hai taake mobile par scroll ho sakay */}
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-x-auto">
+            <table className="w-full text-left border-collapse min-w-[600px]">
               <thead>
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
                   <th className="px-6 py-4 font-semibold">Name</th>
@@ -102,7 +106,6 @@ export default function UsersPage() {
                       <select 
                         value={user.role}
                         onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                        // Admin apna role khud change nahi kar sakta (taake system lock na ho jaye)
                         disabled={user._id === session?.user?.id} 
                         className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed outline-none transition-all"
                       >

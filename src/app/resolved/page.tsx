@@ -8,25 +8,25 @@ import Sidebar from "../Sidebar";
 import TicketTable from "../TicketTable";
 
 export default async function ResolvedTicketsPage() {
-  await connection();
-  const session = await getServerSession(authOptions);
-  
-  if (!session || session.user.role !== "Agent") redirect("/");
+    await connection();
+    const session = await getServerSession(authOptions);
 
-  return (
-    <div className="flex min-h-screen bg-slate-50">
-      <Sidebar role={session.user.role} userName={session.user.name} />
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <header className="bg-white border-b border-slate-200 px-8 py-5">
-          <h2 className="text-2xl font-bold text-green-600">Resolved Tickets</h2>
-          <p className="text-slate-500 text-sm mt-1">Your successfully completed tickets.</p>
-        </header>
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
-            <TicketTable filterType="resolved" />
-          </div>
+    if (!session || session.user.role !== "Agent") redirect("/");
+
+    return (
+        <div className="flex min-h-screen bg-slate-50">
+            <Sidebar role={session.user.role} userName={session.user.name} />
+            <main className="flex-1 overflow-y-auto pt-20 md:pt-0">
+                <header className="bg-white border-b border-slate-200 px-8 py-5">
+                    <h2 className="text-2xl font-bold text-green-600">Resolved Tickets</h2>
+                    <p className="text-slate-500 text-sm mt-1">Your successfully completed tickets.</p>
+                </header>
+                <div className="flex-1 overflow-y-auto p-8">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                        <TicketTable filterType="resolved" />
+                    </div>
+                </div>
+            </main>
         </div>
-      </main>
-    </div>
-  );
+    );
 }
