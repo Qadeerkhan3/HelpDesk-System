@@ -4,12 +4,12 @@ export interface ITicket extends Document {
   ticketNumber: string;
   title: string;
   description: string;
-  category: mongoose.Types.ObjectId;
-  priority: 'Low' | 'Medium' | 'High' | 'Urgent';
+  category: string; // 👈 FIX: Isay ObjectId se String kar diya taake form chal sake
+  priority: 'Low' | 'Standard' | 'High' | 'Urgent'; // 👈 FIX: 'Medium' ki jagah 'Standard' kar diya
   status: 'Open' | 'In Progress' | 'Waiting on User' | 'Resolved' | 'Closed' | 'SLA Breached';
   createdBy: mongoose.Types.ObjectId;
   assignedAgent?: mongoose.Types.ObjectId;
-  attachments: string[]; // Cloudinary URLs
+  attachments: string[]; // ✅ Cloudinary URLs (Perfect)
   responseDueAt?: Date;
   resolutionDueAt?: Date;
   createdAt: Date;
@@ -22,7 +22,7 @@ const TicketSchema: Schema = new Schema(
       type: String, 
       required: true, 
       unique: true 
-    }, // e.g., TKT-0001
+    },
     title: { 
       type: String, 
       required: true 
@@ -32,14 +32,13 @@ const TicketSchema: Schema = new Schema(
       required: true 
     },
     category: { 
-      type: Schema.Types.ObjectId, 
-      ref: 'Category', 
+      type: String, // 👈 FIX: String required for frontend dropdown
       required: true 
     },
     priority: {
       type: String,
-      enum: ['Low', 'Medium', 'High', 'Urgent'],
-      default: 'Medium',
+      enum: ['Low', 'Standard', 'High', 'Urgent'], // 👈 FIX: Matches frontend
+      default: 'Standard',
     },
     status: {
       type: String,
@@ -55,7 +54,7 @@ const TicketSchema: Schema = new Schema(
       type: Schema.Types.ObjectId, 
       ref: 'User' 
     },
-    attachments: [{ type: String }],
+    attachments: [{ type: String }], // ✅ Cloudinary array bilkul theek hai
     responseDueAt: { type: Date },
     resolutionDueAt: { type: Date },
   },

@@ -2,23 +2,47 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 
-export default function TicketTable({ limit }: { limit?: number }) {
+export default function TicketTable({ limit, filterType }: { limit?: number, filterType?: "assigned" | "resolved" | "all" }) {
+  const { data: session } = useSession();
   const [tickets, setTickets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true); // Hydration error se bachne ke liye
+    setMounted(true);
     
     const fetchTickets = () => {
       fetch("/api/tickets")
         .then((res) => res.json())
         .then((data) => {
+          let filteredData = data;
+
+          if (session?.user?.role === "Agent") {
+            // 👈 FIX: Yahan ab dono check honge, chahay object ho ya direct string ID
+            filteredData = data.filter((t: any) => {
+              const agentId = t.assignedAgent?._id || t.assignedAgent;
+              return agentId === session.user.id;
+            });
+            
+            if (filterType === "resolved") {
+              filteredData = filteredData.filter((t: any) => t.status === "Resolved" || t.status === "Closed");
+            } else if (filterType === "assigned") {
+              filteredData = filteredData.filter((t: any) => t.status === "Open" || t.status === "In Progress");
+            }
+          } 
+          else if (session?.user?.role === "User") {
+            filteredData = data.filter((t: any) => {
+              const creatorId = t.createdBy?._id || t.createdBy;
+              return creatorId === session.user.id;
+            });
+          }
+
           if (limit) {
-            setTickets(data.slice(0, limit));
+            setTickets(filteredData.slice(0, limit));
           } else {
-            setTickets(data);
+            setTickets(filteredData);
           }
           setLoading(false);
         })
@@ -28,10 +52,12 @@ export default function TicketTable({ limit }: { limit?: number }) {
         });
     };
 
-    fetchTickets();
-    const interval = setInterval(fetchTickets, 5000); // 5-second polling
-    return () => clearInterval(interval);
-  }, [limit]);
+    if (session?.user?.id) {
+      fetchTickets();
+      const interval = setInterval(fetchTickets, 5000);
+      return () => clearInterval(interval);
+    }
+  }, [limit, filterType, session]);
 
   if (loading) return <div className="text-slate-500 text-sm p-4">Loading tickets...</div>;
   if (tickets.length === 0) return <div className="text-slate-500 text-sm p-4">No tickets found.</div>;

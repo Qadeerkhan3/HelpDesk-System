@@ -3,97 +3,119 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import toast from "react-hot-toast";
+import { Loader2, UserPlus, Mail, Lock, User } from "lucide-react";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({ name: "", email: "", password: "" });
-  const [error, setError] = useState("");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    if (!name || !email || !password) {
+      toast.error("All fields fill required");
+      return;
+    }
 
+    setLoading(true);
     try {
-      const res = await fetch("/api/auth/register", {
+      const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ name, email, password }),
       });
 
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || "Registration failed");
-      }
+      const data = await res.json();
 
-      // Register hone ke baad sidha login page par bhej dein
-      alert("Registration successful! Please login.");
-      router.push("/login");
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      if (res.ok) {
+        toast.success("Account Crete Success.");
+        router.push("/login");
+      } else {
+        toast.error(data.error || "Registration failed.");
+      }
+    } catch (error) {
+      toast.error("There is problem Try Again.");
     }
+    setLoading(false);
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-sm border border-slate-200 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 p-6">
+      <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-md p-8">
+        
         <div className="text-center mb-8">
-          <h1 className="text-2xl font-bold text-blue-600">Helpdesk<span className="text-slate-800">Pro</span></h1>
-          <p className="text-slate-500 mt-2">Create a new account</p>
+          <div className="bg-blue-50 w-12 h-12 rounded-xl flex items-center justify-center mx-auto mb-3 text-blue-600">
+            <UserPlus className="w-6 h-6" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800">Create Account</h1>
+          <p className="text-slate-500 text-sm mt-1">Sign up to become a part of the helpdesk system</p>
         </div>
 
-        {error && <div className="bg-red-50 text-red-500 p-3 rounded-lg text-sm mb-4">{error}</div>}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleRegister} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Full Name</label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Qadeer Ullah"
-              className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Email Address</label>
-            <input
-              type="email"
-              required
-              placeholder="name@company.com"
-              className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-            <input
-              type="password"
-              required
-              placeholder="••••••••"
-              className="w-full p-3 border border-slate-300 rounded-lg focus:outline-none focus:border-blue-500 text-sm"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            />
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Full Name</label>
+            <div className="relative">
+              <User className="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" />
+              <input 
+                type="text" 
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Aman Ul Haqq"
+                className="w-full pl-11 pr-4 py-3 bg-white text-slate-800 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium text-sm"
+                required
+              />
+            </div>
           </div>
 
-          <button
-            type="submit"
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Email Address</label>
+            <div className="relative">
+              <Mail className="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" />
+              <input 
+                type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="name@example.com"
+                className="w-full pl-11 pr-4 py-3 bg-white text-slate-800 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium text-sm"
+                required
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold text-slate-700 mb-1.5">Password</label>
+            <div className="relative">
+              <Lock className="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" />
+              <input 
+                type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full pl-11 pr-4 py-3 bg-white text-slate-800 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-medium text-sm"
+                required
+              />
+            </div>
+          </div>
+
+          <button 
+            type="submit" 
             disabled={loading}
-            className="w-full bg-blue-600 text-white font-medium py-3 rounded-lg hover:bg-blue-700 transition disabled:opacity-50 text-sm mt-2"
+            className="w-full bg-blue-600 text-white font-semibold py-3.5 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 transition-all flex items-center justify-center gap-2 mt-2"
           >
-            {loading ? "Creating account..." : "Sign Up"}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Sign Up"}
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-slate-500">
-          Already have an account? <Link href="/login" className="text-blue-600 font-medium hover:underline">Log in</Link>
-        </div>
+        <p className="text-center text-sm text-slate-600 mt-6">
+        already have an account?{" "}
+          <Link href="/login" className="text-blue-600 font-semibold hover:underline">
+            Login.
+          </Link>
+        </p>
+
       </div>
     </div>
   );

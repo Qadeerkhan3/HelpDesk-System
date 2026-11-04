@@ -43,7 +43,9 @@ export async function POST(req: Request) {
 
     await connectToDatabase();
     const body = await req.json();
-    const { title, description, priority, category } = body;
+    
+    // 👇 FIX: Yahan 'attachments' ko body se extract kiya
+    const { title, description, priority, category, attachments } = body;
 
     if (!title || !description || !priority || !category) {
       return NextResponse.json({ error: "All fields are required" }, { status: 400 });
@@ -60,6 +62,7 @@ export async function POST(req: Request) {
       category,
       createdBy: session.user.id,
       status: "Open",
+      attachments: attachments || [], // 👇 FIX: Yahan database mein attachments save kiye
     });
 
     // 📧 EMAIL ALERT TO ADMIN

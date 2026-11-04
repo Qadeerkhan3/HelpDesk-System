@@ -42,61 +42,28 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, { params }: { params: any }) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // 🔒 RBAC CHECK
-    if (session.user.role === 'User') {
-      return NextResponse.json({ error: "Only Agents and Admins can update status" }, { status: 403 });
-    }
-
-    await connectToDatabase();
+    const resolvedParams = await params;
+    const { id } = resolvedParams;
     
-    const { id } = await params;
+    // Request ki body se data nikalna (isme status bhi ho sakta hai ya assignedAgent bhi)
     const body = await req.json();
-    const { status } = body;
 
-    if (!status) {
-      return NextResponse.json({ error: "Status is required" }, { status: 400 });
-    }
-
-    // Status update karein aur 'createdBy' (User) ka data nikaalein
+    // Database mein ticket ko update karna
     const updatedTicket = await Ticket.findByIdAndUpdate(
       id,
-      { status: status },
+      { $set: body }, // 👈 Yeh line ab har us cheez ko update karegi jo frontend se aayegi
       { new: true }
-    ).populate("createdBy", "name email");
+    );
 
     if (!updatedTicket) {
       return NextResponse.json({ error: "Ticket not found" }, { status: 404 });
     }
 
-    // 📧 EMAIL ALERT TO USER
-    const appUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    
-    if (updatedTicket.createdBy && updatedTicket.createdBy.email) {
-      await sendEmail(
-        updatedTicket.createdBy.email, 
-        `Ticket Status Updated: ${updatedTicket.ticketNumber}`,
-        `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; max-width: 600px;">
-          <h2 style="color: #1e40af; margin-top: 0;">Ticket Update 📝</h2>
-          <p>Hi <b>${updatedTicket.createdBy.name}</b>,</p>
-          <p>The status of your ticket has been changed to <span style="background: #e0f2fe; color: #0284c7; padding: 4px 8px; border-radius: 4px; font-weight: bold;">${status}</span> by our support team.</p>
-          <div style="background: #f8fafc; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #3b82f6;">
-            <p style="margin: 0 0 10px 0;"><b>Ticket ID:</b> ${updatedTicket.ticketNumber}</p>
-            <p style="margin: 0;"><b>Title:</b> ${updatedTicket.title}</p>
-          </div>
-          <a href="${appUrl}/tickets/${updatedTicket._id}" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; font-weight: bold;">View Your Ticket</a>
-        </div>`
-      );
-    }
-
     return NextResponse.json(updatedTicket, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error("Update Error:", error);
+    return NextResponse.json({ error: "Failed to update ticket" }, { status: 500 });
   }
 }

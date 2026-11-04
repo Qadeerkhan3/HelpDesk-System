@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Sidebar from "../Sidebar";
+import toast from "react-hot-toast"; // Toast import kar liya
 
 export default function UsersPage() {
   const { data: session, status } = useSession();
@@ -11,72 +12,68 @@ export default function UsersPage() {
   
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
-    // Agar user logged in nahi hai ya Admin nahi hai, toh wapas bhej dein
-    if (status === "unauthenticated" || (session?.user && session.user.role !== "Admin")) {
-      router.push("/");
-      return;
+    if (status === "unauthenticated") {
+      router.push("/login");
+    } else if (status === "authenticated") {
+      // Sirf Admin is page ko dekh sakta hai
+      if (session?.user?.role !== "Admin") {
+        router.push("/"); 
+      } else {
+        fetchUsers();
+      }
     }
+  }, [status, router, session]);
 
-    if (status === "authenticated" && session.user.role === "Admin") {
-      fetch("/api/users")
-        .then((res) => res.json())
-        .then((data) => {
-          setUsers(data);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error("Failed to fetch users", err);
-          setLoading(false);
-        });
+  const fetchUsers = async () => {
+    try {
+      const res = await fetch("/api/users");
+      const data = await res.json();
+      setUsers(data);
+      setLoading(false);
+    } catch (error) {
+      toast.error("Failed to fetch users");
+      setLoading(false);
     }
-  }, [status, session, router]);
+  };
 
   const handleRoleChange = async (userId: string, newRole: string) => {
-    if (!confirm(`Are you sure you want to make this user an ${newRole}?`)) return;
-    
-    setUpdating(userId);
     try {
       const res = await fetch(`/api/users/${userId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ role: newRole }),
+        body: JSON.stringify({ role: newRole })
       });
 
-      if (!res.ok) throw new Error("Failed to update role");
-      
-      // UI mein list update karein
-      setUsers(users.map(user => user._id === userId ? { ...user, role: newRole } : user));
-      alert(`Role updated successfully to ${newRole}`);
+      if (res.ok) {
+        // State update taake screen par foran change nazar aaye
+        setUsers(users.map(u => u._id === userId ? { ...u, role: newRole } : u));
+        
+        // 🌟 Purane alert() ki jagah Naya Premium Toast
+        toast.success(`${newRole} role assigned successfully!`, {
+          style: { borderRadius: '10px', background: '#333', color: '#fff' },
+        });
+      } else {
+        toast.error("Failed to update role");
+      }
     } catch (error) {
-      console.error(error);
-      alert("Error updating user role");
-    } finally {
-      setUpdating(null);
+      toast.error("An error occurred while updating role");
     }
   };
 
-  if (loading || status === "loading") {
-    return <div className="min-h-screen flex justify-center items-center text-slate-500">Loading Users...</div>;
-  }
+  if (loading || status === "loading") return <div className="min-h-screen flex items-center justify-center text-slate-500">Loading Users...</div>;
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      {/* Sidebar Component */}
-      <Sidebar role={session?.user?.role || "User"} userName={session?.user?.name || "User"} />
-
-      {/* Main Content Area */}
+      <Sidebar role={session?.user?.role} userName={session?.user?.name} />
+      
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        
-        <header className="bg-white border-b border-slate-200 px-8 py-5 flex justify-between items-center">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-800">User Management</h2>
-            <p className="text-slate-500 text-sm mt-1">Manage system users, agents, and administrators.</p>
-          </div>
+        <header className="bg-white border-b border-slate-200 px-8 py-5">
+          <h2 className="text-2xl font-bold text-slate-800">Users & Agents</h2>
+          <p className="text-slate-500 text-sm mt-1">Manage system users and assign roles.</p>
         </header>
-
+        
         <div className="flex-1 overflow-y-auto p-8">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
             <table className="w-full text-left border-collapse">
@@ -84,49 +81,40 @@ export default function UsersPage() {
                 <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
                   <th className="px-6 py-4 font-semibold">Name</th>
                   <th className="px-6 py-4 font-semibold">Email</th>
-                  <th className="px-6 py-4 font-semibold">Joined Date</th>
-                  <th className="px-6 py-4 font-semibold">System Role</th>
+                  <th className="px-6 py-4 font-semibold">Current Role</th>
+                  <th className="px-6 py-4 font-semibold">Change Role</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((user) => (
                   <tr key={user._id} className="border-b border-slate-100 hover:bg-slate-50 transition">
                     <td className="px-6 py-4 font-medium text-slate-800">{user.name}</td>
-                    <td className="px-6 py-4 text-slate-500">{user.email}</td>
-                    <td className="px-6 py-4 text-slate-500">
-                      {new Date(user.createdAt).toLocaleDateString()}
+                    <td className="px-6 py-4 text-slate-600">{user.email}</td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1.5 text-xs font-semibold rounded-full 
+                        ${user.role === 'Admin' ? 'bg-purple-100 text-purple-700' : 
+                          user.role === 'Agent' ? 'bg-blue-100 text-blue-700' : 
+                          'bg-slate-100 text-slate-700'}`}>
+                        {user.role}
+                      </span>
                     </td>
                     <td className="px-6 py-4">
-                      {/* Agar user khud hai, toh apni role change na kar sake (lock out se bachne ke liye) */}
-                      {session?.user?.email === user.email ? (
-                        <span className="px-3 py-1.5 text-sm font-semibold rounded-lg bg-blue-100 text-blue-700">
-                          {user.role} (You)
-                        </span>
-                      ) : (
-                        <select
-                          value={user.role}
-                          disabled={updating === user._id}
-                          onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                          className={`px-3 py-1.5 text-sm font-semibold rounded-lg border focus:outline-none cursor-pointer
-                            ${user.role === 'Admin' ? 'bg-purple-50 text-purple-700 border-purple-200' : 
-                              user.role === 'Agent' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
-                              'bg-slate-50 text-slate-700 border-slate-200'}
-                          `}
-                        >
-                          <option value="User">User</option>
-                          <option value="Agent">Agent</option>
-                          <option value="Admin">Admin</option>
-                        </select>
-                      )}
+                      <select 
+                        value={user.role}
+                        onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                        // Admin apna role khud change nahi kar sakta (taake system lock na ho jaye)
+                        disabled={user._id === session?.user?.id} 
+                        className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed outline-none transition-all"
+                      >
+                        <option value="User">User</option>
+                        <option value="Agent">Agent</option>
+                        <option value="Admin">Admin</option>
+                      </select>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            
-            {users.length === 0 && (
-              <div className="p-8 text-center text-slate-500">No users found.</div>
-            )}
           </div>
         </div>
       </main>
