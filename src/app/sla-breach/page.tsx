@@ -9,27 +9,27 @@ import Ticket from "../../lib/models/Ticket";
 import Link from "next/link";
 
 export default async function SLAReportsPage() {
-  await connection(); 
+  await connection();
   const session = await getServerSession(authOptions);
-  
+
   if (!session || session.user.role !== "Admin") {
     redirect("/");
   }
 
   await connectToDatabase();
   const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-  
+
   // 👇 YAHAN CHANGES KI HAIN:
   // 1. priority: "High" add kiya hai.
   // 2. status mein "Resolved" aur "Closed" ke ilawa sab aayenge (yani Open aur In Progress).
-  const breachedTickets = await Ticket.find({ 
-    status: { $nin: ["Resolved", "Closed"] }, 
-    priority: "High", 
-    createdAt: { $lte: yesterday } 
+  const breachedTickets = await Ticket.find({
+    status: { $nin: ["Resolved", "Closed"] },
+    priority: "High",
+    createdAt: { $lte: yesterday }
   }).populate("createdBy", "name email").sort({ createdAt: 1 });
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="p-4 pt-24 md:p-8 bg-slate-50 min-h-screen">
       <Sidebar role={session.user.role} userName={session.user.name} />
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
         <header className="bg-white border-b border-slate-200 px-8 py-5">
@@ -53,7 +53,7 @@ export default async function SLAReportsPage() {
                 {breachedTickets.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="p-8 text-center text-slate-500 font-medium">
-                       No SLA breached high-priority tickets found. Great job!
+                      No SLA breached high-priority tickets found. Great job!
                     </td>
                   </tr>
                 ) : (
