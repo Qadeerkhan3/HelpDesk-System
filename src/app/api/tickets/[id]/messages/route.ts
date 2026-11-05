@@ -6,7 +6,7 @@ import Message from "../../../../../lib/models/Message";
 import Ticket from "../../../../../lib/models/Ticket";
 import { sendEmail } from "../../../../../lib/email";
 
-// GET method: Puraney messages fetch karne ke liye (Ye same rahega)
+// GET method: Puraney messages fetch karne ke liye 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     const session = await getServerSession(authOptions);
@@ -65,26 +65,36 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     if (isStaff && ticket.createdBy && ticket.createdBy.email) {
       const appUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
       
+      // Ticket ID format set karein
+      const displayId = ticket.ticketNumber || ticket._id.toString().substring(ticket._id.toString().length - 6).toUpperCase();
+      
       await sendEmail(
         ticket.createdBy.email, // User ko email jayegi
-        `New Reply on Your Ticket: ${ticket.ticketNumber}`,
-        `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #e5e7eb; border-radius: 8px; max-width: 600px;">
-          <h2 style="color: #1e40af; margin-top: 0;">New Message Received 📩</h2>
-          <p>Hi <b>${ticket.createdBy.name}</b>,</p>
-          <p><b>${session.user.name}</b> (Support ${session.user.role}) has replied to your ticket: <b>"${ticket.title}"</b>.</p>
+        `New Reply on Your Ticket: #${displayId}`,
+        `<div style="font-family: Arial, sans-serif; padding: 25px; border: 1px solid #e5e7eb; border-radius: 12px; max-width: 600px; background-color: #ffffff;">
+          <h2 style="color: #2563eb; margin-top: 0; font-size: 20px;">New Message Received 📩</h2>
+          <p style="color: #334155; font-size: 15px;">Hi <b>${ticket.createdBy.name}</b>,</p>
+          <p style="color: #334155; font-size: 15px;"><b>${session.user.name}</b> (Support ${session.user.role}) has replied to your ticket: <b>"${ticket.title}"</b>.</p>
           
-          <div style="background: #f8fafc; padding: 15px; border-radius: 5px; margin-top: 15px; border-left: 4px solid #3b82f6; font-style: italic; color: #475569;">
+          <div style="background: #f8fafc; padding: 18px; border-radius: 8px; margin-top: 20px; border-left: 4px solid #3b82f6; font-style: italic; color: #475569; font-size: 15px; line-height: 1.5;">
             "${message}"
           </div>
           
-          <a href="${appUrl}/tickets/${ticket._id}" style="background: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block; margin-top: 20px; font-weight: bold;">Click to Reply</a>
+          <div style="margin-top: 25px;">
+            <a href="${appUrl}/tickets/${ticket._id}" style="background: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: 600; font-size: 14px;">View and Reply to Ticket</a>
+          </div>
+          
+          <p style="margin-top: 30px; font-size: 12px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+            Please click the button above to reply. Do not reply directly to this email.
+          </p>
         </div>`,
-        session.user.email // replyTo: Agar user direct email par reply kare toh Agent/Admin ko wapas jaye
+        session.user.email // replyTo
       );
     }
 
     return NextResponse.json(newMessage, { status: 201 });
   } catch (error: any) {
+    console.error("POST Message Error:", error);
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }

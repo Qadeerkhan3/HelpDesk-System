@@ -11,22 +11,25 @@ export async function GET(req: Request) {
     // Pichle 24 ghante ka waqt nikalen
     const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    // Wo tickets dhoondein jo 24 ghante se purani hain aur abhi tak "Open" hain
     const breachedTickets = await Ticket.find({
       status: "Open",
+      priority: "High",
       createdAt: { $lte: yesterday }
     }).populate("createdBy", "name email");
 
     if (breachedTickets.length === 0) {
-      return NextResponse.json({ message: "System check: No SLA breached tickets today. Great job!" }, { status: 200 });
+      return NextResponse.json({ message: "System check: No High Priority SLA breached tickets today. Great job!" }, { status: 200 });
     }
 
     // Email ka table/design banayein
     let ticketsHtml = "";
     breachedTickets.forEach((ticket) => {
+      // Agar ticketNumber nahi hai toh ID ke aakhri 6 characters utha le
+      const displayId = ticket.ticketNumber || ticket._id.toString().substring(ticket._id.toString().length - 6).toUpperCase();
+
       ticketsHtml += `
         <tr>
-          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;"><b>${ticket.ticketNumber}</b></td>
+          <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;"><b>#${displayId}</b></td>
           <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${ticket.title}</td>
           <td style="padding: 10px; border-bottom: 1px solid #e5e7eb;">${ticket.createdBy?.name || "Unknown"}</td>
         </tr>
@@ -35,13 +38,13 @@ export async function GET(req: Request) {
 
     // 📧 EMAIL ALERT TO ADMIN
     const adminEmail = process.env.EMAIL_USER as string; // Admin ko jayegi
-    
+
     await sendEmail(
       adminEmail,
-      `🚨 SLA Breach Alert: ${breachedTickets.length} Tickets Overdue!`,
+      `🚨 SLA Breach Alert: ${breachedTickets.length} High Priority Tickets Overdue!`,
       `<div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #fee2e2; border-radius: 8px; max-width: 600px;">
         <h2 style="color: #dc2626; margin-top: 0;">SLA Breach Alert 🚨</h2>
-        <p>You have <b>${breachedTickets.length}</b> ticket(s) that have been Open for more than 24 hours without any action.</p>
+        <p>You have <b>${breachedTickets.length} High Priority</b> ticket(s) that have been Open for more than 24 hours without any action.</p>
         
         <table style="width: 100%; text-align: left; border-collapse: collapse; margin-top: 15px; font-size: 14px;">
           <tr style="background: #f8fafc;">
@@ -56,8 +59,8 @@ export async function GET(req: Request) {
       </div>`
     );
 
-    return NextResponse.json({ 
-      message: `SLA Alert sent successfully for ${breachedTickets.length} tickets.` 
+    return NextResponse.json({
+      message: `SLA Alert sent successfully for ${breachedTickets.length} high priority tickets.`
     }, { status: 200 });
 
   } catch (error: any) {

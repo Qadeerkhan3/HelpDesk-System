@@ -68,7 +68,6 @@ function TicketDetailsClient() {
       const res = await fetch("/api/users");
       if (res.ok) {
         const data = await res.json();
-        // 🌟 FIX 1: Sirf Active Agents aur Admin ko filter karein
         const activeStaff = data.filter((u: any) => 
           (u.role === "Agent" || u.role === "Admin") && u.isActive !== false
         );
@@ -150,11 +149,9 @@ function TicketDetailsClient() {
     return val;
   };
 
-  // 🌟 FIX 2: Agar category object ki bajaye string ID hai, toh usay truncate kar dein taake UI na toote
   const getCategoryName = (category: any) => {
     if (!category) return "General";
     if (typeof category === "object") return category.name || category.title || "General";
-    // Agar string 24 chars ki MongoDB ID jaisi hai, toh usay chota kar ke dikhayein
     if (typeof category === "string" && category.length > 20) {
       return `Cat-${category.substring(0, 4)}`;
     }
@@ -174,6 +171,9 @@ function TicketDetailsClient() {
   if (!ticket) return <div className="min-h-screen flex items-center justify-center text-red-500">Ticket not found.</div>;
 
   const isAdminOrAgent = session?.user?.role === "Admin" || session?.user?.role === "Agent";
+  
+  // 👇 NAYA: Ticket close ya resolve ho toh usay disable karne ka check
+  const isTicketClosed = ticket.status === "Closed" || ticket.status === "Resolved";
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 md:p-10">
@@ -229,7 +229,6 @@ function TicketDetailsClient() {
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
               
-              {/* 🌟 FIX 3: Grid gap ko badhaya aur items ko align kiya taake text overlap na kare */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8 mb-8 items-start">
                 <div className="break-words">
                   <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mb-1.5"><AlertCircle className="w-4 h-4"/> Priority</p>
@@ -303,8 +302,16 @@ function TicketDetailsClient() {
 
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col h-[600px] sticky top-6">
-              <div className="p-5 border-b border-slate-200 bg-slate-50 rounded-t-2xl">
+              
+              {/* 👇 NAYA: Header mein Assigned Agent ka Badge */}
+              <div className="p-5 border-b border-slate-200 bg-slate-50 rounded-t-2xl flex justify-between items-center">
                 <h3 className="font-semibold text-slate-800">Conversation</h3>
+                {ticket.assignedAgent && (
+                  <span className="text-xs font-semibold bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-sm">
+                    <User className="w-3.5 h-3.5" />
+                    Agent: {safeRender(ticket.assignedAgent)}
+                  </span>
+                )}
               </div>
               
               <div className="flex-1 overflow-y-auto p-5 space-y-4">
@@ -332,24 +339,34 @@ function TicketDetailsClient() {
                 )}
               </div>
 
-              <div className="p-4 border-t border-slate-200 bg-white rounded-b-2xl">
-                <form onSubmit={sendMessage} className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    placeholder="Type a message..."
-                    className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all"
-                  />
-                  <button 
-                    type="submit" 
-                    disabled={!newMessage.trim()}
-                    className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center w-11 h-11"
-                  >
-                    <Send className="w-5 h-5" />
-                  </button>
-                </form>
-              </div>
+              {/* 👇 NAYA: Agar ticket Closed/Resolved hai toh form ki jagah message dikhayein */}
+              {isTicketClosed ? (
+                <div className="p-5 border-t border-slate-200 bg-slate-100 rounded-b-2xl text-center">
+                  <p className="text-slate-500 text-sm font-medium">
+                    This ticket is {ticket.status}. Chat is locked.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-4 border-t border-slate-200 bg-white rounded-b-2xl">
+                  <form onSubmit={sendMessage} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      placeholder="Type a message..."
+                      className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all"
+                    />
+                    <button 
+                      type="submit" 
+                      disabled={!newMessage.trim()}
+                      className="bg-blue-600 text-white p-2.5 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all flex items-center justify-center w-11 h-11"
+                    >
+                      <Send className="w-5 h-5" />
+                    </button>
+                  </form>
+                </div>
+              )}
+
             </div>
           </div>
 
