@@ -2,13 +2,11 @@
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
 import { Loader2, LogIn, Mail, Lock } from "lucide-react";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,15 +24,16 @@ export default function LoginPage() {
 
       if (res?.error) {
         toast.error("Invalid credentials !");
+        setLoading(false); // 🌟 FIX: Error aane par loading rokein
       } else {
-        toast.success(" Login Success!");
-        router.push("/");
-        router.refresh();
+        toast.success("Login Success!");
+        // 🌟 FIX: Yeh browser ko force karega page reload karne par, jisse NextAuth ka naya session apply ho jayega
+        window.location.href = "/";
       }
     } catch (error) {
-      toast.error("Something went Wrng.");
+      toast.error("Something went wrong.");
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
@@ -68,7 +67,6 @@ export default function LoginPage() {
           <div>
             <div className="flex justify-between items-center mb-1.5">
               <label className="block text-sm font-semibold text-slate-700">Password</label>
-              {/* 👇 Forgot Password Link */}
               <Link href="/forgot-password" className="text-xs text-blue-600 font-semibold hover:underline">
                 forget your password?              </Link>
             </div>
@@ -94,7 +92,6 @@ export default function LoginPage() {
           </button>
         </form>
 
-        {/* 👇 Register Redirect Button */}
         <div className="mt-6 pt-6 border-t border-slate-100 text-center">
           <p className="text-sm text-slate-600 mb-3"> No Account Found?</p>
           <Link
