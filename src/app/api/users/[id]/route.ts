@@ -1,42 +1,36 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { authOptions } from "../../../../lib/auth";
+import { authOptions } from "../../../../lib/auth"; 
 import connectToDatabase from "../../../../lib/mongodb";
 import User from "../../../../lib/models/User";
 
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> | { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
-    
-    // Security Check: Sirf Admin roles change kar sakta hai
     if (!session || session.user.role !== "Admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    await connectToDatabase();
-    const resolvedParams = await params;
-    const { id } = resolvedParams;
-    
     const body = await req.json();
-    const { role } = body;
+    await connectToDatabase();
+    
+    // Naye Next.js versions (15+) mein params Promise ho sakta hai
+    const resolvedParams = await Promise.resolve(params);
+    
+    // Explicitly batana ke kya update karna hai
+    const updateData: any = {};
+    if (body.role !== undefined) updateData.role = body.role;
+    if (body.isActive !== undefined) updateData.isActive = body.isActive;
 
-    if (!role) {
-      return NextResponse.json({ error: "Role is required" }, { status: 400 });
-    }
-
-    // Role update karein
     const updatedUser = await User.findByIdAndUpdate(
-      id,
-      { role: role },
+      resolvedParams.id, 
+      { $set: updateData }, 
       { new: true }
-    ).select("-password"); // Password wapas bhejne ki zaroorat nahi
-
-    if (!updatedUser) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
-    }
-
-    return NextResponse.json(updatedUser, { status: 200 });
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    );
+    
+    return NextResponse.json(updatedUser);
+  } catch (error) {
+    console.error("Update Error:", error);
+    return NextResponse.json({ error: "Failed to update user" }, { status: 500 });
   }
 }

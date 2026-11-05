@@ -1,37 +1,39 @@
-import CredentialsProvider from "next-auth/providers/credentials";
 import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 import connectToDatabase from "./mongodb";
 import User from "./models/User";
-import bcrypt from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
       credentials: {
-        email: { label: "Email", type: "email", placeholder: "you@example.com" },
-        password: { label: "Password", type: "password" }
+        email: { label: "Email", type: "text" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Missing email or password");
+          throw new Error("Email and password are required.");
         }
 
         await connectToDatabase();
-        const user = await User.findOne({ email: credentials.email }).select("+password");
+
+        const user = await User.findOne({ email: credentials.email });
 
         if (!user) {
-          throw new Error("No user found with this email");
+          throw new Error("Invalid email or password");
         }
 
-        if (!user.isActive) {
-          throw new Error("This account is deactivated");
+        const isPasswordCorrect = await bcrypt.compare(credentials.password, user.password);
+
+        if (!isPasswordCorrect) {
+          throw new Error("Invalid email or password");
         }
 
-        const isPasswordMatch = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isPasswordMatch) {
-          throw new Error("Incorrect password");
+        // 👇 YEH CONDITION ADD KI GAYI HAI: Agar admin ne disable kiya hai toh login rok do
+        if (user.isActive === false) {
+          throw new Error("Your account has been disabled by the Admin.");
         }
 
         return {
@@ -40,10 +42,9 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           role: user.role,
         };
-      }
-    })
+      },
+    }),
   ],
-  session: { strategy: "jwt" },
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -54,12 +55,17 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
+        session.user.id = token.id as string;
+        session.user.role = token.role as string;
       }
       return session;
-    }
+    },
   },
-  pages: { signIn: "/login" },
+  pages: {
+    signIn: "/login",
+  },
+  session: {
+    strategy: "jwt",
+  },
   secret: process.env.NEXTAUTH_SECRET,
 };

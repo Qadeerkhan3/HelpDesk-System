@@ -4,7 +4,6 @@ import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-// 👇 Yahan Paperclip aur Download icons add kiye hain
 import { ArrowLeft, Send, Clock, User, Tag, AlertCircle, Loader2, Paperclip, Download } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -69,7 +68,11 @@ function TicketDetailsClient() {
       const res = await fetch("/api/users");
       if (res.ok) {
         const data = await res.json();
-        setAgents(data.filter((u: any) => u.role === "Agent" || u.role === "Admin"));
+        // 🌟 FIX 1: Sirf Active Agents aur Admin ko filter karein
+        const activeStaff = data.filter((u: any) => 
+          (u.role === "Agent" || u.role === "Admin") && u.isActive !== false
+        );
+        setAgents(activeStaff);
       }
     } catch (error) {
       console.error("Failed to fetch agents", error);
@@ -147,6 +150,17 @@ function TicketDetailsClient() {
     return val;
   };
 
+  // 🌟 FIX 2: Agar category object ki bajaye string ID hai, toh usay truncate kar dein taake UI na toote
+  const getCategoryName = (category: any) => {
+    if (!category) return "General";
+    if (typeof category === "object") return category.name || category.title || "General";
+    // Agar string 24 chars ki MongoDB ID jaisi hai, toh usay chota kar ke dikhayein
+    if (typeof category === "string" && category.length > 20) {
+      return `Cat-${category.substring(0, 4)}`;
+    }
+    return category;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
@@ -177,7 +191,9 @@ function TicketDetailsClient() {
           <div>
             <h1 className="text-3xl font-bold text-slate-800 mb-2">{ticket.title}</h1>
             <p className="text-slate-500 text-sm flex items-center gap-2">
-              <span className="font-mono bg-slate-100 px-2 py-1 rounded text-slate-700">{ticket.ticketNumber}</span>
+              <span className="font-mono bg-slate-100 px-2 py-1 rounded text-slate-700 uppercase">
+                {ticket.ticketNumber || ticket._id.substring(ticket._id.length - 6)}
+              </span>
               • Created by <span className="font-semibold text-slate-700">{safeRender(ticket.createdBy, "Unknown")}</span>
             </p>
           </div>
@@ -212,25 +228,29 @@ function TicketDetailsClient() {
           
           <div className="lg:col-span-2 space-y-8">
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 md:p-8">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-                <div>
-                  <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mb-1"><AlertCircle className="w-4 h-4"/> Priority</p>
+              
+              {/* 🌟 FIX 3: Grid gap ko badhaya aur items ko align kiya taake text overlap na kare */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-x-6 gap-y-8 mb-8 items-start">
+                <div className="break-words">
+                  <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mb-1.5"><AlertCircle className="w-4 h-4"/> Priority</p>
                   <p className="font-semibold text-slate-800">{safeRender(ticket.priority, "Standard")}</p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mb-1"><Tag className="w-4 h-4"/> Category</p>
-                  <p className="font-semibold text-slate-800">{safeRender(ticket.category, "General")}</p>
+                <div className="break-words overflow-hidden">
+                  <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mb-1.5"><Tag className="w-4 h-4"/> Category</p>
+                  <p className="font-semibold text-slate-800 truncate" title={ticket.category}>
+                    {getCategoryName(ticket.category)}
+                  </p>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mb-1"><Clock className="w-4 h-4"/> Created Date</p>
+                <div className="break-words">
+                  <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mb-1.5"><Clock className="w-4 h-4"/> Created Date</p>
                   <p className="font-semibold text-slate-800">{new Date(ticket.createdAt).toLocaleDateString()}</p>
                 </div>
                 
-                <div>
-                  <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mb-1"><User className="w-4 h-4"/> Assigned Agent</p>
+                <div className="break-words">
+                  <p className="text-sm font-medium text-slate-500 flex items-center gap-1.5 mb-1.5"><User className="w-4 h-4"/> Assigned Agent</p>
                   {session?.user?.role === "Admin" ? (
                     <select
-                      value={ticket.assignedAgent?._id || ""}
+                      value={ticket.assignedAgent?._id || ticket.assignedAgent || ""}
                       disabled={updating}
                       onChange={(e) => handleAssignAgent(e.target.value)}
                       className="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm font-semibold rounded-lg focus:ring-blue-500 focus:border-blue-500 block px-3 py-2 outline-none transition-all cursor-pointer"
@@ -255,7 +275,6 @@ function TicketDetailsClient() {
                 </div>
               </div>
 
-              {/* 🌟 NAYA SECTION: Attachments View */}
               {ticket.attachments && ticket.attachments.length > 0 && (
                 <div className="mt-8">
                   <h3 className="text-sm font-medium text-slate-500 mb-3 border-b pb-2">Attachments</h3>
