@@ -26,28 +26,26 @@ export default async function SLAReportsPage() {
   }).populate("createdBy", "name email").sort({ createdAt: 1 });
 
   return (
-    // 🌟 1. Naya Layout Structure: flex-col for mobile, flex-row for desktop
     <div className="flex flex-col md:flex-row min-h-screen bg-slate-50">
       
-      {/* Sidebar Component */}
       <Sidebar role={session.user.role} userName={session.user.name} />
       
-      {/* 🌟 2. pt-20 for Mobile: Sidebar ki fixed patti se bachne ke liye */}
-      <main className="flex-1 w-full pt-20 md:pt-0 overflow-x-hidden">
+      {/* 🌟 FIX 1: mt-[76px] lagaya hai taake mobile par page neeli patti ke neechay se start ho */}
+      <main className="flex-1 w-full mt-[76px] md:mt-0 overflow-hidden">
         
         <header className="bg-white border-b border-slate-200 px-4 md:px-8 py-5">
           <h2 className="text-xl md:text-2xl font-bold text-red-600">SLA Breached Reports</h2>
-          <p className="text-slate-500 text-xs md:text-sm mt-1">High priority critical tickets unresolved for more than 24 hours.</p>
+          <p className="text-slate-500 text-sm mt-1">High priority critical tickets unresolved for more than 24 hours.</p>
         </header>
         
         <div className="p-4 md:p-8">
-          <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="bg-white rounded-xl shadow-sm border border-slate-200">
             
-            {/* 🌟 3. Table Scroll Wrap: Mobile par table slide hone ke liye */}
-            <div className="overflow-x-auto w-full">
+            {/* 🌟 FIX 2: Mobile scroll ke liye khas div wrapper (overflow-x-auto) */}
+            <div className="overflow-x-auto max-w-[100vw] md:max-w-full block">
               
-              {/* 🌟 4. min-w-[700px]: Table ko force kiya hai taake tang na ho aur scroll ho */}
-              <table className="w-full text-left border-collapse whitespace-nowrap min-w-[700px]">
+              {/* 🌟 FIX 3: Table ko min-w-[800px] diya hai, ab ye mobile par toote ga nahi balkay scroll hoga */}
+              <table className="w-full text-left border-collapse whitespace-nowrap min-w-[800px]">
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
                     <th className="px-6 py-4 font-semibold">Ticket #</th>
@@ -55,7 +53,7 @@ export default async function SLAReportsPage() {
                     <th className="px-6 py-4 font-semibold">Customer</th>
                     <th className="px-6 py-4 font-semibold">Status</th>
                     <th className="px-6 py-4 font-semibold">Created Date</th>
-                    <th className="px-6 py-4 font-semibold">Action</th>
+                    <th className="px-6 py-4 font-semibold relative z-10">Action</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -83,6 +81,7 @@ export default async function SLAReportsPage() {
                           {new Date(ticket.createdAt).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4">
+                          {/* 🌟 Action Button */}
                           <Link href={`/tickets/${ticket._id}`} className="text-blue-600 hover:underline text-sm font-medium">
                             View Ticket
                           </Link>
