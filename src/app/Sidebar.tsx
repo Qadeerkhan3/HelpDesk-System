@@ -4,21 +4,21 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { 
-  LayoutDashboard, 
-  PlusCircle, 
-  Ticket, 
-  Users, 
-  LogOut, 
-  Menu, 
-  X, 
-  CheckCircle2, 
-  FolderKanban ,
+import {
+  LayoutDashboard,
+  PlusCircle,
+  Ticket,
+  Users,
+  LogOut,
+  Menu,
+  X,
+  CheckCircle2,
+  FolderKanban,
   AlertTriangle,
   Settings
 } from "lucide-react";
 
-export default function Sidebar({ role, userName }: { role?: string; userName?: string }) {
+export default function Sidebar({ role, userName }: { role?: string | null; userName?: string | null }) {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -26,8 +26,8 @@ export default function Sidebar({ role, userName }: { role?: string; userName?: 
 
   const linkClass = (path: string) => `
     flex items-center gap-3 px-4 py-3 rounded-xl font-medium text-sm transition-all
-    ${isActive(path) 
-      ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20" 
+    ${isActive(path)
+      ? "bg-blue-600 text-white shadow-lg shadow-blue-600/20"
       : "text-slate-400 hover:text-white hover:bg-slate-800/60"}
   `;
 
@@ -38,8 +38,8 @@ export default function Sidebar({ role, userName }: { role?: string; userName?: 
         <div className="flex items-center gap-2">
           <span className="font-bold text-lg tracking-tight">Helpdesk<span className="text-blue-500">Pro</span></span>
         </div>
-        <button 
-          onClick={() => setIsOpen(!isOpen)} 
+        <button
+          onClick={() => setIsOpen(!isOpen)}
           className="p-2 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700 transition-colors focus:outline-none"
         >
           {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
@@ -48,8 +48,8 @@ export default function Sidebar({ role, userName }: { role?: string; userName?: 
 
       {/* Backdrop for Mobile when Sidebar is Open */}
       {isOpen && (
-        <div 
-          onClick={() => setIsOpen(false)} 
+        <div
+          onClick={() => setIsOpen(false)}
           className="fixed inset-0 bg-slate-950/60 z-40 md:hidden backdrop-blur-sm transition-opacity"
         />
       )}
@@ -61,7 +61,7 @@ export default function Sidebar({ role, userName }: { role?: string; userName?: 
         transform transition-transform duration-300 ease-in-out shadow-2xl md:shadow-none
         ${isOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
       `}>
-        
+
         <div className="p-6">
           <div className="hidden md:flex items-center gap-2 mb-8">
             <h1 className="text-xl font-bold text-white tracking-tight">Helpdesk<span className="text-blue-500">Pro</span></h1>
@@ -73,7 +73,7 @@ export default function Sidebar({ role, userName }: { role?: string; userName?: 
           </div>
 
           <div className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2">Menu</div>
-          
+
           <nav className="space-y-1.5">
             <Link href="/" onClick={() => setIsOpen(false)} className={linkClass("/")}>
               <LayoutDashboard className="w-4 h-4" />
@@ -101,7 +101,7 @@ export default function Sidebar({ role, userName }: { role?: string; userName?: 
               </>
             )}
 
-           {role === "Admin" && (
+            {role === "Admin" && (
               <>
                 <Link href="/manage-tickets" onClick={() => setIsOpen(false)} className={linkClass("/manage-tickets")}>
                   <FolderKanban className="w-4 h-4" />
@@ -137,7 +137,7 @@ export default function Sidebar({ role, userName }: { role?: string; userName?: 
             </div>
           </div>
 
-          <button 
+          <button
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 hover:bg-red-500/10 hover:text-red-400 transition-colors text-sm font-medium border border-slate-700/50"
           >
